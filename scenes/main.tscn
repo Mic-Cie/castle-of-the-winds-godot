@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://main_scene"]
+[gd_scene load_steps=7 format=3 uid="uid://main_scene"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://game_view_scene" path="res://scenes/game_view.tscn" id="2_game_view"]
 [ext_resource type="PackedScene" uid="uid://menu_bar_scene" path="res://scenes/menu_bar.tscn" id="3_menu_bar"]
 [ext_resource type="Script" path="res://scripts/input/input_handler.gd" id="4_input"]
+[ext_resource type="PackedScene" uid="uid://bottom_panel_scene" path="res://scenes/bottom_panel.tscn" id="5_bottom_panel"]
+[ext_resource type="Script" path="res://scripts/ui/game_host.gd" id="6_game_host"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -27,7 +29,32 @@ theme_override_constants/separation = 0
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="GameView" parent="Layout" instance=ExtResource("2_game_view")]
+[node name="ContentSplit" type="VSplitContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+drag_area_offset = 0
+drag_area_margin_begin = 4
+drag_area_margin_end = 4
+
+[node name="GameHost" type="Control" parent="Layout/ContentSplit"]
+unique_name_in_owner = true
+layout_mode = 2
+clip_contents = true
+custom_minimum_size = Vector2(0, 200)
+size_flags_vertical = 3
+script = ExtResource("6_game_host")
+
+[node name="GameView" parent="Layout/ContentSplit/GameHost" instance=ExtResource("2_game_view")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BottomPanel" parent="Layout/ContentSplit" instance=ExtResource("5_bottom_panel")]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3

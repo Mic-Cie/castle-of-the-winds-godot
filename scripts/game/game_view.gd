@@ -23,6 +23,10 @@ var _local_player_id: int = 0
 const DEBUG_CLICK_MAP := true
 
 
+func _get_minimum_size() -> Vector2:
+	return Vector2.ZERO
+
+
 func _ready() -> void:
 	resized.connect(_on_resized)
 	_h_scroll.value_changed.connect(_on_h_scroll_changed)
@@ -250,23 +254,22 @@ func _on_visibility_changed(player_id: int, uncovered_positions: Array[Vector2i]
 
 
 func _on_resized() -> void:
-	call_deferred("_update_viewport_size")
+	_update_viewport_size()
 
 
 func _update_viewport_size() -> void:
 	var scrollbar_width := int(_v_scroll.get_combined_minimum_size().x)
 	var scrollbar_height := int(_h_scroll.get_combined_minimum_size().y)
-	var available_width := maxi(int(size.x) - scrollbar_width, GameConstants.TILE_SIZE)
-	var available_height := maxi(int(size.y) - scrollbar_height, GameConstants.TILE_SIZE)
+	var available_width := maxi(int(size.x) - scrollbar_width, 1)
+	var available_height := maxi(int(size.y) - scrollbar_height, 1)
+
+	_viewport_container.custom_minimum_size = Vector2.ZERO
+	_sub_viewport.size = Vector2i(available_width, available_height)
 
 	var visible_tiles := Vector2i(
-		maxi(available_width / GameConstants.TILE_SIZE, 1),
-		maxi(available_height / GameConstants.TILE_SIZE, 1),
+		ceili(available_width / float(GameConstants.TILE_SIZE)),
+		ceili(available_height / float(GameConstants.TILE_SIZE)),
 	)
-	var pixel_size := visible_tiles * GameConstants.TILE_SIZE
-
-	_viewport_container.custom_minimum_size = pixel_size
-	_sub_viewport.size = pixel_size
 	scroll_controller.set_visible_tiles(visible_tiles)
 	_update_scrollbars()
 

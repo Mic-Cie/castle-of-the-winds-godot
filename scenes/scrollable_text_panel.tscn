@@ -1,0 +1,50 @@
+[gd_scene load_steps=5 format=3 uid="uid://scrollable_text_panel"]
+
+[ext_resource type="Script" path="res://scripts/ui/scrollable_text_panel.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_white"]
+bg_color = Color(1, 1, 1, 1)
+
+[node name="ScrollableTextPanel" type="PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_white")
+script = ExtResource("1_script")
+
+[node name="Layout" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="ViewColumn" type="VBoxContainer" parent="Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Layout/ViewColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 2
+
+[node name="TextLabel" type="RichTextLabel" parent="Layout/ViewColumn/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/default_color = Color(0, 0, 0, 1)
+bbcode_enabled = false
+fit_content = true
+scroll_active = false
+
+[node name="HScroll" type="HScrollBar" parent="Layout/ViewColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+
+[node name="VScroll" type="VScrollBar" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
