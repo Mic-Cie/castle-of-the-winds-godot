@@ -1,0 +1,68 @@
+[gd_scene load_steps=2 format=3 uid="uid://game_view_scene"]
+
+[ext_resource type="Script" path="res://scripts/game/game_view.gd" id="1_game_view"]
+
+[node name="GameView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_game_view")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopRow" type="HBoxContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ViewColumn" type="VBoxContainer" parent="Layout/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ViewportContainer" type="SubViewportContainer" parent="Layout/TopRow/ViewColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = false
+
+[node name="SubViewport" type="SubViewport" parent="Layout/TopRow/ViewColumn/ViewportContainer"]
+unique_name_in_owner = true
+handle_input_locally = false
+size = Vector2i(1024, 1024)
+render_target_update_mode = 4
+
+[node name="WorldRoot" type="Node2D" parent="Layout/TopRow/ViewColumn/ViewportContainer/SubViewport"]
+unique_name_in_owner = true
+
+[node name="TileMap" type="TileMapLayer" parent="Layout/TopRow/ViewColumn/ViewportContainer/SubViewport/WorldRoot"]
+unique_name_in_owner = true
+
+[node name="DoorMap" type="TileMapLayer" parent="Layout/TopRow/ViewColumn/ViewportContainer/SubViewport/WorldRoot"]
+unique_name_in_owner = true
+
+[node name="FogMap" type="TileMapLayer" parent="Layout/TopRow/ViewColumn/ViewportContainer/SubViewport/WorldRoot"]
+unique_name_in_owner = true
+
+[node name="Entities" type="Node2D" parent="Layout/TopRow/ViewColumn/ViewportContainer/SubViewport/WorldRoot"]
+unique_name_in_owner = true
+
+[node name="HScroll" type="HScrollBar" parent="Layout/TopRow/ViewColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+
+[node name="VScroll" type="VScrollBar" parent="Layout/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0

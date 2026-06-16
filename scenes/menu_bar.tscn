@@ -1,0 +1,66 @@
+[gd_scene load_steps=4 format=3 uid="uid://menu_bar_scene"]
+
+[ext_resource type="Script" path="res://scripts/ui/game_menu_bar.gd" id="1_menu_bar"]
+[ext_resource type="Script" path="res://scripts/ui/game_toolbar.gd" id="2_toolbar"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
+bg_color = Color(0.925, 0.925, 0.925, 1)
+
+[node name="MenuBar" type="VBoxContainer"]
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+theme_override_constants/separation = 0
+script = ExtResource("1_menu_bar")
+
+[node name="Bar" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+
+[node name="BarRow" type="HBoxContainer" parent="Bar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LeftMenus" type="HBoxContainer" parent="Bar/BarRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="MenuBottomLine" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Toolbar" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+script = ExtResource("2_toolbar")
+
+[node name="ToolbarRow" type="HBoxContainer" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 0
+theme_override_constants/separation = 0
+
+[node name="TextSectionMargin" type="MarginContainer" parent="Toolbar/ToolbarRow"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="TextButtons" type="HBoxContainer" parent="Toolbar/ToolbarRow/TextSectionMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 0
+theme_override_constants/separation = 0
+
+[node name="IconButtons" type="HBoxContainer" parent="Toolbar/ToolbarRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+alignment = 0
+theme_override_constants/separation = 0
