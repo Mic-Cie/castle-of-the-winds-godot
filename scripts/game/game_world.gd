@@ -103,6 +103,8 @@ func try_toggle_door(pos: Vector2i, entity_id: int) -> bool:
 
 func _register_entity(entity: Entity) -> void:
 	entities[entity.entity_id] = entity
+	entity.stats.recalculate_max_health()
+	entity.stats.hp.current = maxi(entity.stats.hp.max_value, 0)
 	_track_entity_stats(entity)
 
 

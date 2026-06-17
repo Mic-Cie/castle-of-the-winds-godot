@@ -67,6 +67,13 @@ const MOVE_HOLD_REPEAT_INTERVAL := 0.02
 
 const DEFAULT_HP := 10
 const DEFAULT_HP_MAX := 10
+const DEFAULT_LEVEL := 1
+const DEFAULT_DRAINED_HIT_POINTS := 0
+
+## Tunable max-HP formula: (HP_BASE + (con - ref) * per_point) * level - drained.
+const HP_BASE := 10
+const HP_CONSTITUTION_REFERENCE := 10
+const HP_PER_CONSTITUTION_POINT := 2
 const DEFAULT_MANA := 5
 const DEFAULT_MANA_MAX := 5
 const DEFAULT_STRENGTH := 10
