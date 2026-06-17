@@ -1,3 +1,0 @@
-Add mouse movement of the hero - besides keyboard, it should be also possible to move hero by clicking the hero and dragging the cursor. Hero's graphic is not dragged along with the cursor - it simply changes position when the mouse cursor moves to another tile.
-
-Make it possible to drag diagonally too - to achieve that

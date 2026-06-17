@@ -5,6 +5,7 @@ signal entity_moved(entity_id: int, old_position: Vector2i, new_position: Vector
 signal entity_added(entity: Entity)
 signal visibility_changed(player_id: int, uncovered_positions: Array[Vector2i])
 signal door_changed(pos: Vector2i)
+signal stats_changed(entity_id: int, stat_name: StringName)
 
 var game_map: GameMap
 var entities: Dictionary = {}
@@ -24,7 +25,7 @@ func add_player(player_id: int, spawn_position: Vector2i) -> Player:
 	uncovered.append_array(player.vision.apply_default_from_map(game_map))
 	uncovered.append_array(player.vision.reveal_on_step(game_map, spawn_position))
 
-	entities[player.entity_id] = player
+	_register_entity(player)
 	entity_added.emit(player)
 	if not uncovered.is_empty():
 		visibility_changed.emit(player.player_id, uncovered)
@@ -98,6 +99,17 @@ func try_toggle_door(pos: Vector2i, entity_id: int) -> bool:
 	game_map.set_door_state(pos, new_state)
 	door_changed.emit(pos)
 	return true
+
+
+func _register_entity(entity: Entity) -> void:
+	entities[entity.entity_id] = entity
+	_track_entity_stats(entity)
+
+
+func _track_entity_stats(entity: Entity) -> void:
+	entity.stats.changed.connect(
+		func(stat_name: StringName) -> void: stats_changed.emit(entity.entity_id, stat_name)
+	)
 
 
 func _is_occupied_by_other(entity_id: int, position: Vector2i) -> bool:

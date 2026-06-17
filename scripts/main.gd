@@ -27,6 +27,13 @@ func _ready() -> void:
 		_game_view,
 	)
 	_menu_bar.setup(_input_handler)
+	_bind_local_player_stats()
+
+
+func _bind_local_player_stats() -> void:
+	var entity := _game_view.world.get_entity(_game_view.get_local_player_entity_id())
+	if entity:
+		_bottom_panel.bind_stats(entity.stats)
 
 
 func _on_resized() -> void:

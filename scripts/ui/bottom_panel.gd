@@ -11,8 +11,12 @@ const DEFAULT_LOG_WIDTH_RATIO := 0.75
 @onready var _h_split: HSplitContainer = %HSplit
 @onready var _scroll_panel: ScrollableTextPanel = %ScrollPanel
 @onready var _stats_panel: PanelContainer = %StatsPanel
+@onready var _hp_value: Label = %HpValue
+@onready var _mana_value: Label = %ManaValue
+@onready var _speed_value: Label = %SpeedValue
 
 var _initial_h_split_set := false
+var _stats: CharacterStats
 
 
 func _ready() -> void:
@@ -24,6 +28,15 @@ func _ready() -> void:
 	_h_split.drag_area_margin_begin = 4
 	_h_split.drag_area_margin_end = 4
 	call_deferred("_initialize_h_split")
+
+
+func bind_stats(stats: CharacterStats) -> void:
+	if _stats and _stats.changed.is_connected(_on_stats_changed):
+		_stats.changed.disconnect(_on_stats_changed)
+	_stats = stats
+	if _stats:
+		_stats.changed.connect(_on_stats_changed)
+		_refresh_stats()
 
 
 func get_required_minimum_height() -> int:
@@ -74,6 +87,18 @@ func _max_log_width() -> int:
 	if _h_split.size.x <= 0:
 		return MIN_LOG_WIDTH
 	return int(_h_split.size.x) - MIN_STATS_WIDTH
+
+
+func _on_stats_changed(_stat_name: StringName = &"") -> void:
+	_refresh_stats()
+
+
+func _refresh_stats() -> void:
+	if _stats == null:
+		return
+	_hp_value.text = "%d (%d)" % [_stats.hp.current, _stats.hp.max_value]
+	_mana_value.text = "%d (%d)" % [_stats.mana.current, _stats.mana.max_value]
+	_speed_value.text = "%d%% / %d%%" % [_stats.speed, _stats.get_movement_speed()]
 
 
 func _clamp_h_split() -> void:
