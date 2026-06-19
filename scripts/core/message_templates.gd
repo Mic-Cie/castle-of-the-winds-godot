@@ -13,3 +13,10 @@ const EXAMINE_ROCK := "Rock"
 const EXAMINE_OPEN_DOOR := "An open door"
 const EXAMINE_CLOSED_DOOR := "A closed door"
 const EXAMINE_BROKEN_DOOR := "A broken door"
+
+const COMMAND_LOOK := "Look"
+const COMMAND_ABORTED := "Command Aborted."
+
+
+static func format_command_pending(command_name: String) -> String:
+	return "Command Pending: %s..." % command_name

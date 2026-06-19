@@ -71,6 +71,15 @@ const ACTION_TIME_COST_MIN := 1
 const GAME_TICK_SECONDS := 1.0
 const MESSAGE_LOG_MAX_LINES := 50
 const MESSAGE_LOG_CONTENT_HEIGHT_MULTIPLIER := 2
+
+const EXAMINE_POPUP_PADDING := 4
+const EXAMINE_POPUP_CURSOR_GAP := 4
+const EXAMINE_POPUP_EDGE_MARGIN := 2
+const EXAMINE_POPUP_BORDER_WIDTH := 1
+## Mouse hotspot to cursor image top-left, for popup placement.
+const EXAMINE_POPUP_CURSOR_TOP_LEFT_OFFSET := Vector2(0, 0)
+## Approximate cursor size used when flipping popup below or beside the cursor.
+const EXAMINE_POPUP_CURSOR_SIZE := Vector2(16, 16)
 const DEFAULT_GAME_MODE := GameMode.Mode.SINGLE_PLAYER
 ## const DEFAULT_GAME_MODE := GameMode.Mode.MULTI_PLAYER
 

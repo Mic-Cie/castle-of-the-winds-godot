@@ -2,6 +2,7 @@ class_name GameView
 extends Control
 
 const _DiagonalWallResolver = preload("res://scripts/level/diagonal_wall_resolver.gd")
+const ExaminePopup = preload("res://scripts/ui/examine_popup.gd")
 
 @onready var _viewport_container: SubViewportContainer = %ViewportContainer
 @onready var _sub_viewport: SubViewport = %SubViewport
@@ -18,6 +19,7 @@ var scroll_controller := ScrollController.new()
 var _entity_sprites: Dictionary = {}
 var _local_player_entity_id: int = -1
 var _local_player_id: int = 0
+var _examine_popup: ExaminePopup
 
 ## Set to false to silence map click debug output.
 const DEBUG_CLICK_MAP := true
@@ -32,6 +34,9 @@ func _ready() -> void:
 	_h_scroll.value_changed.connect(_on_h_scroll_changed)
 	_v_scroll.value_changed.connect(_on_v_scroll_changed)
 	scroll_controller.scroll_changed.connect(_on_scroll_changed)
+	_examine_popup = ExaminePopup.new()
+	_examine_popup.z_index = 100
+	add_child(_examine_popup)
 	_setup_world()
 	_on_resized()
 
@@ -61,6 +66,38 @@ func get_viewport_local_mouse_map_pixel() -> Vector2:
 	var global_mouse := get_global_mouse_position()
 	var local := _viewport_container.get_global_transform_with_canvas().affine_inverse() * global_mouse
 	return viewport_local_to_map_pixel(local)
+
+
+func map_pixel_to_viewport_local(map_pixel: Vector2) -> Vector2:
+	var scroll := scroll_controller.scroll_offset
+	return map_pixel - Vector2(scroll) * GameConstants.TILE_SIZE
+
+
+func warp_mouse_to_map_pixel(map_pixel: Vector2) -> void:
+	var viewport_local := map_pixel_to_viewport_local(map_pixel)
+	var global_pos := _viewport_container.get_global_transform_with_canvas() * viewport_local
+	get_viewport().warp_mouse(global_pos)
+
+
+func show_examine_popup(viewport_local: Vector2, text: String) -> void:
+	var pointer := _viewport_local_to_game_view_local(viewport_local)
+	var cursor_top_left := pointer - GameConstants.EXAMINE_POPUP_CURSOR_TOP_LEFT_OFFSET
+	_examine_popup.present(cursor_top_left, text, get_play_area_rect())
+
+
+func hide_examine_popup() -> void:
+	_examine_popup.hide_popup()
+
+
+func get_play_area_rect() -> Rect2:
+	var viewport_global := _viewport_container.get_global_rect()
+	var origin := get_global_transform_with_canvas().affine_inverse() * viewport_global.position
+	return Rect2(origin, viewport_global.size)
+
+
+func _viewport_local_to_game_view_local(viewport_local: Vector2) -> Vector2:
+	var global_pos := _viewport_container.get_global_transform_with_canvas() * viewport_local
+	return get_global_transform_with_canvas().affine_inverse() * global_pos
 
 
 func get_local_player_entity_id() -> int:

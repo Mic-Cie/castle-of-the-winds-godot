@@ -2,6 +2,7 @@ class_name InputHandler
 extends Node
 
 const SearchCommand = preload("res://scripts/core/search_command.gd")
+const CommandTool = preload("res://scripts/input/command_tool.gd")
 
 ## Reads local input and produces commands. In multiplayer, only the owning client
 ## runs this for their player; commands are sent to the server for validation.
@@ -15,6 +16,9 @@ var _hold_time: float = 0.0
 var _repeat_time: float = 0.0
 var _initial_delay_done: bool = false
 var _dragging_hero: bool = false
+var _command_tool: CommandTool = CommandTool.new()
+var _command_cursor_texture: ImageTexture
+var _right_examine_active: bool = false
 
 
 func setup(world: GameWorld, get_local_entity_id: Callable, game_view: GameView) -> void:
@@ -22,11 +26,31 @@ func setup(world: GameWorld, get_local_entity_id: Callable, game_view: GameView)
 	_get_local_entity_id = get_local_entity_id
 	_game_view = game_view
 	_game_view.connect_viewport_input(_on_viewport_gui_input)
+	_command_tool.started.connect(_on_command_started)
+	_command_tool.finished.connect(_on_command_finished)
+	_command_tool.aborted.connect(_on_command_aborted)
 	set_process(true)
+
+
+func _input(event: InputEvent) -> void:
+	if not _right_examine_active:
+		return
+	if event is InputEventMouseButton:
+		var mouse := event as InputEventMouseButton
+		if mouse.button_index == MOUSE_BUTTON_RIGHT and not mouse.pressed:
+			_end_right_examine()
+
+
+func is_command_active() -> bool:
+	return _command_tool.is_active()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _world == null:
+		return
+
+	if _command_tool.is_active():
+		_handle_command_input(event)
 		return
 
 	if event.is_action_pressed("search") and not event.is_echo():
@@ -50,7 +74,35 @@ func _unhandled_input(event: InputEvent) -> void:
 			_clear_hold()
 
 
+func _handle_command_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_abort_command()
+		return
+
+	if event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
+		_confirm_command()
+		return
+
+	var direction := _direction_from_event(event)
+	if direction == Vector2i.ZERO:
+		return
+
+	if event.is_pressed() and not event.is_echo():
+		get_viewport().set_input_as_handled()
+		_stop_drag()
+		_move_command_cursor(direction)
+
+
 func _process(delta: float) -> void:
+	if _right_examine_active and not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		_end_right_examine()
+		return
+
+	if _command_tool.is_active():
+		return
+
 	if _dragging_hero:
 		_process_drag(delta)
 	elif _held_direction != Vector2i.ZERO:
@@ -93,6 +145,10 @@ func _process_drag(delta: float) -> void:
 
 
 func _on_viewport_gui_input(event: InputEvent) -> void:
+	if _command_tool.is_active():
+		_handle_command_viewport_input(event)
+		return
+
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
 		if mouse.button_index == MOUSE_BUTTON_LEFT:
@@ -108,8 +164,28 @@ func _on_viewport_gui_input(event: InputEvent) -> void:
 			if _dragging_hero:
 				_stop_drag()
 				_game_view.accept_viewport_input()
-		elif mouse.button_index == MOUSE_BUTTON_RIGHT and mouse.pressed:
-			trigger_examine_at(_game_view.viewport_local_to_map_grid(mouse.position))
+		elif mouse.button_index == MOUSE_BUTTON_RIGHT:
+			if mouse.pressed:
+				_start_right_examine(mouse.position)
+			else:
+				_end_right_examine()
+			_game_view.accept_viewport_input()
+
+
+func _handle_command_viewport_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		var motion := event as InputEventMouseMotion
+		var map_pixel := _game_view.viewport_local_to_map_pixel(motion.position)
+		_command_tool.set_mouse_map_pixel(map_pixel)
+		_game_view.accept_viewport_input()
+		return
+
+	if event is InputEventMouseButton:
+		var mouse := event as InputEventMouseButton
+		if mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:
+			var map_pixel := _game_view.viewport_local_to_map_pixel(mouse.position)
+			_command_tool.set_mouse_map_pixel(map_pixel)
+			_confirm_command()
 			_game_view.accept_viewport_input()
 
 
@@ -155,25 +231,62 @@ func _process_drag_repeat(delta: float) -> void:
 
 
 func trigger_search() -> void:
+	if _command_tool.is_active():
+		return
 	_stop_drag()
 	_try_search()
 
 
 func trigger_get() -> void:
+	if _command_tool.is_active():
+		return
 	var entity_id: int = _get_local_entity_id.call()
 	if entity_id < 0:
 		return
 	_world.post_player_message(entity_id, MessageTemplates.FLOOR_EMPTY)
 
 
+func trigger_examine_command() -> void:
+	if _command_tool.is_active():
+		return
+	var entity := _get_hero_entity()
+	if entity == null:
+		return
+	_command_tool.start_examine(entity.grid_position)
+
+
 func trigger_examine_at(pos: Vector2i) -> void:
+	if _command_tool.is_active():
+		return
 	_stop_drag()
 	var entity_id: int = _get_local_entity_id.call()
 	if entity_id < 0:
 		return
-	var text := _world.examine_tile(entity_id, pos)
-	for line in text.split("\n", false):
-		_world.post_player_message(entity_id, line)
+	_post_examine_result(entity_id, pos)
+
+
+func _start_right_examine(viewport_local: Vector2) -> void:
+	if _command_tool.is_active():
+		return
+	_stop_drag()
+	_right_examine_active = true
+	_show_right_examine_popup(viewport_local)
+
+
+func _show_right_examine_popup(viewport_local: Vector2) -> void:
+	var entity_id: int = _get_local_entity_id.call()
+	if entity_id < 0:
+		return
+	var grid_pos := _game_view.viewport_local_to_map_grid(viewport_local)
+	var text := _world.examine_tile(entity_id, grid_pos)
+	_game_view.show_examine_popup(viewport_local, text)
+
+
+func _end_right_examine() -> void:
+	if not _right_examine_active:
+		return
+	_right_examine_active = false
+	_game_view.hide_examine_popup()
 
 
 func _try_search() -> void:
@@ -258,6 +371,79 @@ func _get_hero_grid_position() -> Vector2i:
 	if entity == null:
 		return Vector2i.ZERO
 	return entity.grid_position
+
+
+func _move_command_cursor(direction: Vector2i) -> void:
+	var game_map := _world.game_map
+	_command_tool.move_grid_cursor(direction, game_map.width, game_map.height)
+	_warp_command_cursor_to_grid()
+
+
+func _warp_command_cursor_to_grid() -> void:
+	_game_view.warp_mouse_to_map_pixel(_command_tool.get_cursor_map_pixel())
+
+
+func _confirm_command() -> void:
+	if not _command_tool.is_active():
+		return
+
+	match _command_tool.kind:
+		CommandTool.Kind.EXAMINE:
+			var entity_id: int = _get_local_entity_id.call()
+			if entity_id < 0:
+				_abort_command()
+				return
+			_post_examine_result(entity_id, _command_tool.get_target_grid())
+			_command_tool.complete()
+		_:
+			_abort_command()
+
+
+func _post_examine_result(entity_id: int, pos: Vector2i) -> void:
+	var text := _world.examine_tile(entity_id, pos)
+	for line in text.split("\n", false):
+		_world.post_player_message(entity_id, line)
+
+
+func _abort_command() -> void:
+	_command_tool.abort()
+
+
+func _on_command_started(_kind: CommandTool.Kind, label: String) -> void:
+	_stop_drag()
+	_clear_hold()
+	get_viewport().gui_release_focus()
+
+	var entity_id: int = _get_local_entity_id.call()
+	if entity_id >= 0:
+		_world.post_player_message(
+			entity_id,
+			MessageTemplates.format_command_pending(label),
+		)
+
+	_game_view.call_deferred(
+		"warp_mouse_to_map_pixel",
+		_command_tool.get_cursor_map_pixel(),
+	)
+
+	if _command_cursor_texture == null:
+		_command_cursor_texture = CommandTool.create_cross_cursor()
+	Input.set_custom_mouse_cursor(
+		_command_cursor_texture,
+		Input.CURSOR_ARROW,
+		CommandTool.cross_cursor_hotspot(),
+	)
+
+
+func _on_command_finished() -> void:
+	Input.set_custom_mouse_cursor(null)
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+
+
+func _on_command_aborted() -> void:
+	var entity_id: int = _get_local_entity_id.call()
+	if entity_id >= 0:
+		_world.post_player_message(entity_id, MessageTemplates.COMMAND_ABORTED)
 
 
 static func _direction_from_map_pixel(cursor_map: Vector2, hero_grid: Vector2i) -> Vector2i:

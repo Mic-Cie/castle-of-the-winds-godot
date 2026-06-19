@@ -19,7 +19,7 @@ static func examine(
 	var detect_objects: Array[String] = []
 	var map_objects: Array[String] = []
 
-	if has_los:
+	if has_los and is_on_map:
 		see_objects = objects
 	elif is_on_map:
 		map_objects = objects

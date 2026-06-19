@@ -82,7 +82,7 @@ func _build_menus() -> void:
 	_add_inactive_dropdown_menu("Activate")
 	_add_dropdown_menu("Verbs", [
 		{"text": "Get", "id": Action.VERB_GET, "disabled": true},
-		{"text": "Examine", "id": Action.VERB_EXAMINE, "disabled": true},
+		{"text": "Examine", "id": Action.VERB_EXAMINE},
 		{"text": "Free Hand", "id": Action.VERB_FREE_HAND, "disabled": true},
 		{"text": "Search", "id": Action.VERB_SEARCH},
 		{"text": "Disarm Trap", "id": Action.VERB_DISARM_TRAP},
@@ -229,5 +229,8 @@ func _on_menu_id_pressed(id: int) -> void:
 		Action.VERB_SEARCH:
 			if _input_handler:
 				_input_handler.trigger_search()
+		Action.VERB_EXAMINE:
+			if _input_handler:
+				_input_handler.trigger_examine_command()
 		_:
 			pass
