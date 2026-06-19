@@ -109,10 +109,8 @@ func _on_viewport_gui_input(event: InputEvent) -> void:
 				_stop_drag()
 				_game_view.accept_viewport_input()
 		elif mouse.button_index == MOUSE_BUTTON_RIGHT and mouse.pressed:
-			if GameView.DEBUG_CLICK_MAP:
-				var map_pos := _game_view.viewport_local_to_map_grid(mouse.position)
-				print("[MapClick] coordinates=(%d, %d)" % [map_pos.x, map_pos.y])
-				_game_view.accept_viewport_input()
+			trigger_examine_at(_game_view.viewport_local_to_map_grid(mouse.position))
+			_game_view.accept_viewport_input()
 
 
 func _stop_drag() -> void:
@@ -166,6 +164,16 @@ func trigger_get() -> void:
 	if entity_id < 0:
 		return
 	_world.post_player_message(entity_id, MessageTemplates.FLOOR_EMPTY)
+
+
+func trigger_examine_at(pos: Vector2i) -> void:
+	_stop_drag()
+	var entity_id: int = _get_local_entity_id.call()
+	if entity_id < 0:
+		return
+	var text := _world.examine_tile(entity_id, pos)
+	for line in text.split("\n", false):
+		_world.post_player_message(entity_id, line)
 
 
 func _try_search() -> void:

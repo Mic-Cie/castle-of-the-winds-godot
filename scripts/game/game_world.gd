@@ -50,6 +50,14 @@ func post_player_message(entity_id: int, message: String) -> void:
 	player_message.emit(entity_id, message)
 
 
+func examine_tile(entity_id: int, pos: Vector2i) -> String:
+	var entity := get_entity(entity_id)
+	if entity == null or not entity is Player:
+		return MessageTemplates.EXAMINE_UNSEEN_LOCATION
+	var player := entity as Player
+	return Examine.examine(game_map, player.vision, player.grid_position, pos)
+
+
 func can_accept_command(entity_id: int) -> bool:
 	var activity := _get_activity(entity_id)
 	if activity.has_pending_search():
