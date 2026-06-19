@@ -6,14 +6,22 @@ signal entity_added(entity: Entity)
 signal visibility_changed(player_id: int, uncovered_positions: Array[Vector2i])
 signal door_changed(pos: Vector2i)
 signal stats_changed(entity_id: int, stat_name: StringName)
+signal time_changed(game_time: int)
+signal tick_completed()
+signal player_message(entity_id: int, message: String)
 
 var game_map: GameMap
 var entities: Dictionary = {}
+var game_time: int = 0
+var game_mode: int = GameMode.Mode.SINGLE_PLAYER
+
 var _next_entity_id: int = 1
+var _entity_activities: Dictionary = {}
 
 
-func _init(p_game_map: GameMap) -> void:
+func _init(p_game_map: GameMap, p_game_mode: int = GameConstants.DEFAULT_GAME_MODE) -> void:
 	game_map = p_game_map
+	game_mode = p_game_mode
 
 
 func add_player(player_id: int, spawn_position: Vector2i) -> Player:
@@ -36,8 +44,75 @@ func get_entity(entity_id: int) -> Entity:
 	return entities.get(entity_id)
 
 
+func post_player_message(entity_id: int, message: String) -> void:
+	if get_entity(entity_id) == null:
+		return
+	player_message.emit(entity_id, message)
+
+
+func can_accept_command(entity_id: int) -> bool:
+	var activity := _get_activity(entity_id)
+	if activity.has_pending_search():
+		return true
+	return not activity.is_busy(game_time)
+
+
 func process_command(command: GameCommand) -> bool:
-	return command.execute(self)
+	var entity_id := command.get_entity_id()
+	if entity_id < 0 or get_entity(entity_id) == null:
+		return false
+
+	var activity := _get_activity(entity_id)
+	if activity.has_pending_search():
+		_cancel_pending(entity_id)
+	elif activity.is_busy(game_time):
+		return false
+
+	var success := command.execute(self)
+	if success:
+		_after_player_action()
+	return success
+
+
+func process_move_command(command: MoveCommand) -> bool:
+	if not try_move_entity(command.entity_id, command.direction):
+		return false
+
+	var entity := get_entity(command.entity_id)
+	var time_cost := entity.stats.get_step_time_cost(GameConstants.STEP_TIME_COST)
+	var activity := _get_activity(command.entity_id)
+	if game_mode == GameMode.Mode.SINGLE_PLAYER:
+		_advance_time(time_cost)
+	else:
+		activity.busy_until = game_time + time_cost
+	return true
+
+
+func process_search_command(command: SearchCommand) -> bool:
+	var entity := get_entity(command.entity_id)
+	if entity == null:
+		return false
+
+	var time_cost := entity.stats.get_time_cost(GameConstants.SEARCH_TIME_COST)
+	if game_mode == GameMode.Mode.SINGLE_PLAYER:
+		_advance_time(time_cost)
+		try_search(command.entity_id)
+		return true
+
+	var activity := _get_activity(command.entity_id)
+	activity.pending_search = true
+	activity.pending_completion_time = game_time + time_cost
+	return true
+
+
+func tick() -> void:
+	if game_mode != GameMode.Mode.MULTI_PLAYER:
+		return
+
+	game_time += 1
+	_resolve_pending_actions()
+	time_changed.emit(game_time)
+	tick_completed.emit()
 
 
 func try_move_entity(entity_id: int, direction: Vector2i) -> bool:
@@ -81,12 +156,20 @@ func try_search(entity_id: int) -> bool:
 		door_changed.emit(pos)
 		revealed = true
 
+	if revealed:
+		player_message.emit(entity_id, MessageTemplates.SECRET_DOOR_FOUND)
 	return revealed
 
 
 func try_toggle_door(pos: Vector2i, entity_id: int) -> bool:
 	var entity := get_entity(entity_id)
 	if entity == null:
+		return false
+
+	var activity := _get_activity(entity_id)
+	if activity.has_pending_search():
+		_cancel_pending(entity_id)
+	elif activity.is_busy(game_time):
 		return false
 
 	var state := game_map.get_door_state(pos)
@@ -103,8 +186,11 @@ func try_toggle_door(pos: Vector2i, entity_id: int) -> bool:
 
 func _register_entity(entity: Entity) -> void:
 	entities[entity.entity_id] = entity
+	_entity_activities[entity.entity_id] = EntityActivity.new()
 	entity.stats.recalculate_max_health()
-	entity.stats.hp.current = maxi(entity.stats.hp.max_value, 0)
+	entity.stats.recalculate_max_mana()
+	entity.stats.recalculate_carry_weight()
+	entity.stats.recalculate_movement_speed()
 	_track_entity_stats(entity)
 
 
@@ -112,6 +198,34 @@ func _track_entity_stats(entity: Entity) -> void:
 	entity.stats.changed.connect(
 		func(stat_name: StringName) -> void: stats_changed.emit(entity.entity_id, stat_name)
 	)
+
+
+func _get_activity(entity_id: int) -> EntityActivity:
+	return _entity_activities[entity_id]
+
+
+func _cancel_pending(entity_id: int) -> void:
+	_get_activity(entity_id).clear_pending()
+
+
+func _advance_time(seconds: int) -> void:
+	game_time += seconds
+	time_changed.emit(game_time)
+
+
+func _resolve_pending_actions() -> void:
+	for entity_id in _entity_activities:
+		var activity: EntityActivity = _entity_activities[entity_id]
+		if not activity.pending_search:
+			continue
+		if game_time < activity.pending_completion_time:
+			continue
+		activity.clear_pending()
+		try_search(entity_id)
+
+
+func _after_player_action() -> void:
+	pass
 
 
 func _is_occupied_by_other(entity_id: int, position: Vector2i) -> bool:

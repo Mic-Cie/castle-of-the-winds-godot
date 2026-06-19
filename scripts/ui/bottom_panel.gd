@@ -14,13 +14,16 @@ const DEFAULT_LOG_WIDTH_RATIO := 0.75
 @onready var _hp_value: Label = %HpValue
 @onready var _mana_value: Label = %ManaValue
 @onready var _speed_value: Label = %SpeedValue
+@onready var _time_value: Label = %TimeValue
 
 var _initial_h_split_set := false
 var _stats: CharacterStats
+var _game_time: int = 0
 
 
 func _ready() -> void:
 	custom_minimum_size.y = MIN_HEIGHT
+	_scroll_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll_panel.custom_minimum_size = Vector2(MIN_LOG_WIDTH, 0)
 	_stats_panel.custom_minimum_size = Vector2(MIN_STATS_WIDTH, 0)
 
@@ -37,6 +40,30 @@ func bind_stats(stats: CharacterStats) -> void:
 	if _stats:
 		_stats.changed.connect(_on_stats_changed)
 		_refresh_stats()
+
+
+func bind_game_time(initial_time: int = 0) -> void:
+	_game_time = initial_time
+	_refresh_time()
+
+
+func set_game_time(seconds: int) -> void:
+	if _game_time == seconds:
+		return
+	_game_time = seconds
+	_refresh_time()
+
+
+func append_message(text: String) -> void:
+	_scroll_panel.append_line(text)
+
+
+func configure_message_log(total_window_height: int) -> void:
+	var content_h := (
+		get_max_height_for_total(total_window_height)
+		* GameConstants.MESSAGE_LOG_CONTENT_HEIGHT_MULTIPLIER
+	)
+	_scroll_panel.set_scroll_content_height(content_h)
 
 
 func get_required_minimum_height() -> int:
@@ -60,6 +87,11 @@ func _initialize_h_split() -> void:
 	)
 	_initial_h_split_set = true
 	_clamp_h_split()
+	call_deferred("_notify_scroll_layout_ready")
+
+
+func _notify_scroll_layout_ready() -> void:
+	_scroll_panel.ensure_initial_scroll()
 
 
 func _on_h_split_dragged(offset: int) -> void:
@@ -98,7 +130,11 @@ func _refresh_stats() -> void:
 		return
 	_hp_value.text = "%d (%d)" % [_stats.hp.current, _stats.hp.max_value]
 	_mana_value.text = "%d (%d)" % [_stats.mana.current, _stats.mana.max_value]
-	_speed_value.text = "%d%% / %d%%" % [_stats.speed, _stats.get_movement_speed()]
+	_speed_value.text = "%d%% / %d%%" % [_stats.speed, _stats.movement_speed]
+
+
+func _refresh_time() -> void:
+	_time_value.text = GameConstants.format_game_time(_game_time)
 
 
 func _clamp_h_split() -> void:

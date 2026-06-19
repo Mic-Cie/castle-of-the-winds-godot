@@ -62,3 +62,6 @@ size_flags_vertical = 3
 [node name="InputHandler" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("4_input")
+
+[node name="GameTickTimer" type="Timer" parent="."]
+unique_name_in_owner = true

@@ -161,9 +161,18 @@ func trigger_search() -> void:
 	_try_search()
 
 
+func trigger_get() -> void:
+	var entity_id: int = _get_local_entity_id.call()
+	if entity_id < 0:
+		return
+	_world.post_player_message(entity_id, MessageTemplates.FLOOR_EMPTY)
+
+
 func _try_search() -> void:
 	var entity_id: int = _get_local_entity_id.call()
 	if entity_id < 0:
+		return
+	if not _world.can_accept_command(entity_id):
 		return
 	_world.process_command(SearchCommand.new(entity_id))
 
@@ -173,6 +182,8 @@ func _try_move(direction: Vector2i, check_fog: bool = true) -> void:
 	if entity_id < 0:
 		return
 	if not _can_move_in_direction(direction, check_fog):
+		return
+	if not _world.can_accept_command(entity_id):
 		return
 	_world.process_command(MoveCommand.new(entity_id, direction))
 

@@ -38,7 +38,9 @@ func _build_toolbar() -> void:
 		var button := Button.new()
 		button.text = label
 		_style_text_button(button)
-		if label == "Search":
+		if label == "Get":
+			button.pressed.connect(_on_get_pressed)
+		elif label == "Search":
 			button.pressed.connect(_on_search_pressed)
 		_text_buttons.add_child(button)
 
@@ -131,6 +133,11 @@ func _set_button_styles(
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("focus", normal)
+
+
+func _on_get_pressed() -> void:
+	if _input_handler:
+		_input_handler.trigger_get()
 
 
 func _on_search_pressed() -> void:

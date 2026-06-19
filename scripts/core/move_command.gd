@@ -10,5 +10,9 @@ func _init(p_entity_id: int, p_direction: Vector2i) -> void:
 	direction = p_direction
 
 
+func get_entity_id() -> int:
+	return entity_id
+
+
 func execute(world: GameWorld) -> bool:
-	return world.try_move_entity(entity_id, direction)
+	return world.process_move_command(self)

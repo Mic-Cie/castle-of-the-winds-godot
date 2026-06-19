@@ -65,6 +65,15 @@ const HERO_TILE := Vector2i(0, 0)
 const MOVE_HOLD_INITIAL_DELAY := 1.0
 const MOVE_HOLD_REPEAT_INTERVAL := 0.02
 
+const STEP_TIME_COST := 5
+const SEARCH_TIME_COST := 10
+const ACTION_TIME_COST_MIN := 1
+const GAME_TICK_SECONDS := 1.0
+const MESSAGE_LOG_MAX_LINES := 50
+const MESSAGE_LOG_CONTENT_HEIGHT_MULTIPLIER := 2
+const DEFAULT_GAME_MODE := GameMode.Mode.SINGLE_PLAYER
+## const DEFAULT_GAME_MODE := GameMode.Mode.MULTI_PLAYER
+
 const DEFAULT_HP := 10
 const DEFAULT_HP_MAX := 10
 const DEFAULT_LEVEL := 1
@@ -74,6 +83,22 @@ const DEFAULT_DRAINED_HIT_POINTS := 0
 const HP_BASE := 10
 const HP_CONSTITUTION_REFERENCE := 10
 const HP_PER_CONSTITUTION_POINT := 2
+
+## Max-mana formula: ceil((level - 1) * (int - ref) / level_div) + ceil((int - ref) / int_div).
+const MANA_INTELLIGENCE_REFERENCE := 15
+const MANA_LEVEL_DIVISOR := 7
+const MANA_INT_DIVISOR := 10
+
+## Carry weight: base + str * per_str + (str / divisor)^2 * quadratic_scale (integer division).
+const CARRY_WEIGHT_BASE := 11500
+const CARRY_WEIGHT_PER_STRENGTH := 250
+const CARRY_WEIGHT_STRENGTH_DIVISOR := 10
+const CARRY_WEIGHT_QUADRATIC_SCALE := 500
+
+const MOVEMENT_SPEED_LIGHT_LOAD := 200
+const MOVEMENT_SPEED_FULL_LOAD := 100
+const MOVEMENT_SPEED_MIN := 1
+const DEFAULT_CURRENT_CARRY_WEIGHT := 0
 const DEFAULT_MANA := 5
 const DEFAULT_MANA_MAX := 5
 const DEFAULT_STRENGTH := 10
@@ -85,3 +110,11 @@ const DEFAULT_DEXTERITY_MAX := 10
 const DEFAULT_INTELLIGENCE := 10
 const DEFAULT_INTELLIGENCE_MAX := 10
 const DEFAULT_SPEED := 100
+
+
+static func format_game_time(seconds: int) -> String:
+	var days := seconds / 86400
+	var hours := (seconds % 86400) / 3600
+	var minutes := (seconds % 3600) / 60
+	var secs := seconds % 60
+	return "%dd,%02d:%02d:%02d" % [days, hours, minutes, secs]

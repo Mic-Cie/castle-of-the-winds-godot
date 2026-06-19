@@ -9,6 +9,7 @@ const DEFAULT_BOTTOM_HEIGHT_RATIO := 0.2
 @onready var _menu_bar: GameMenuBar = %MenuBar
 @onready var _content_split: VSplitContainer = %ContentSplit
 @onready var _bottom_panel: BottomPanel = %BottomPanel
+@onready var _game_tick_timer: Timer = %GameTickTimer
 
 var _initial_v_split_set := false
 
@@ -28,6 +29,46 @@ func _ready() -> void:
 	)
 	_menu_bar.setup(_input_handler)
 	_bind_local_player_stats()
+	_bind_game_time()
+	_bind_player_messages()
+	_setup_game_clock()
+
+
+func _bind_game_time() -> void:
+	var world := _game_view.world
+	_bottom_panel.bind_game_time(world.game_time)
+	world.time_changed.connect(_on_game_time_changed)
+	if world.game_mode == GameMode.Mode.MULTI_PLAYER:
+		world.tick_completed.connect(_on_game_tick_completed)
+
+
+func _bind_player_messages() -> void:
+	var world := _game_view.world
+	var local_entity_id := _game_view.get_local_player_entity_id()
+	world.player_message.connect(
+		func(entity_id: int, message: String) -> void:
+			if entity_id == local_entity_id:
+				_bottom_panel.append_message(message)
+	)
+
+
+func _setup_game_clock() -> void:
+	_game_tick_timer.wait_time = GameConstants.GAME_TICK_SECONDS
+	_game_tick_timer.timeout.connect(_on_game_tick_timer_timeout)
+	if _game_view.world.game_mode == GameMode.Mode.MULTI_PLAYER:
+		_game_tick_timer.start()
+
+
+func _on_game_time_changed(new_time: int) -> void:
+	_bottom_panel.set_game_time(new_time)
+
+
+func _on_game_tick_timer_timeout() -> void:
+	_game_view.world.tick()
+
+
+func _on_game_tick_completed() -> void:
+	_game_view.queue_redraw()
 
 
 func _bind_local_player_stats() -> void:
@@ -39,6 +80,7 @@ func _bind_local_player_stats() -> void:
 func _on_resized() -> void:
 	if not _initial_v_split_set:
 		return
+	call_deferred("_configure_message_log")
 	call_deferred("_clamp_v_split")
 
 
@@ -54,6 +96,7 @@ func _initialize_content_split() -> void:
 		)
 		_initial_v_split_set = true
 	_clamp_v_split()
+	call_deferred("_configure_message_log")
 
 
 func _on_content_split_dragged(offset: int) -> void:
@@ -100,3 +143,9 @@ func _clamp_v_split() -> void:
 			_content_split,
 			SplitLayoutUtils.absolute_to_split_offset(_content_split, after_top)
 		)
+
+
+func _configure_message_log() -> void:
+	if _content_split.size.y <= 0:
+		return
+	_bottom_panel.configure_message_log(int(_content_split.size.y))
