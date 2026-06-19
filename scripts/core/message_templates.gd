@@ -15,7 +15,23 @@ const EXAMINE_CLOSED_DOOR := "A closed door"
 const EXAMINE_BROKEN_DOOR := "A broken door"
 
 const COMMAND_LOOK := "Look"
+const COMMAND_OPEN := "Open"
+const COMMAND_CLOSE := "Close"
 const COMMAND_ABORTED := "Command Aborted."
+
+const CANT_REACH := "You can't reach it!"
+const IN_THE_WAY := "You're in the way!"
+const DONE := "Done"
+const NOTHING_TO_OPEN := "Nothing there to open!"
+const NOTHING_TO_CLOSE := "Nothing there to close!"
+
+
+static func format_monster_hits_you(monster_name: String) -> String:
+	return "The %s hits you!" % monster_name
+
+
+static func format_you_hit_monster(monster_name: String) -> String:
+	return "You hit the %s!" % monster_name
 
 
 static func format_command_pending(command_name: String) -> String:

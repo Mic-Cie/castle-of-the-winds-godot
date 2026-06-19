@@ -232,5 +232,11 @@ func _on_menu_id_pressed(id: int) -> void:
 		Action.VERB_EXAMINE:
 			if _input_handler:
 				_input_handler.trigger_examine_command()
+		Action.VERB_OPEN:
+			if _input_handler:
+				_input_handler.trigger_open_command()
+		Action.VERB_CLOSE:
+			if _input_handler:
+				_input_handler.trigger_close_command()
 		_:
 			pass

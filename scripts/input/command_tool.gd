@@ -4,6 +4,8 @@ extends RefCounted
 enum Kind {
 	NONE,
 	EXAMINE,
+	OPEN,
+	CLOSE,
 }
 
 signal started(kind: Kind, label: String)
@@ -23,8 +25,20 @@ func is_active() -> bool:
 
 
 func start_examine(start_grid: Vector2i) -> void:
-	kind = Kind.EXAMINE
-	pending_label = MessageTemplates.COMMAND_LOOK
+	_start(Kind.EXAMINE, MessageTemplates.COMMAND_LOOK, start_grid)
+
+
+func start_open(start_grid: Vector2i) -> void:
+	_start(Kind.OPEN, MessageTemplates.COMMAND_OPEN, start_grid)
+
+
+func start_close(start_grid: Vector2i) -> void:
+	_start(Kind.CLOSE, MessageTemplates.COMMAND_CLOSE, start_grid)
+
+
+func _start(command_kind: Kind, label: String, start_grid: Vector2i) -> void:
+	kind = command_kind
+	pending_label = label
 	grid_cursor = start_grid
 	cursor_map_pixel = _grid_center_pixel(start_grid)
 	_uses_mouse = false

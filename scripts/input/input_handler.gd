@@ -2,6 +2,7 @@ class_name InputHandler
 extends Node
 
 const SearchCommand = preload("res://scripts/core/search_command.gd")
+const AttackCommand = preload("res://scripts/core/attack_command.gd")
 const CommandTool = preload("res://scripts/input/command_tool.gd")
 
 ## Reads local input and produces commands. In multiplayer, only the owning client
@@ -157,6 +158,9 @@ func _on_viewport_gui_input(event: InputEvent) -> void:
 					_dragging_hero = true
 					_clear_hold()
 					_game_view.accept_viewport_input()
+				elif _try_attack_monster_at(_game_view.viewport_local_to_map_grid(mouse.position)):
+					_stop_drag()
+					_game_view.accept_viewport_input()
 				elif _try_toggle_door_at(_game_view.viewport_local_to_map_grid(mouse.position)):
 					_stop_drag()
 					_game_view.accept_viewport_input()
@@ -255,6 +259,23 @@ func trigger_examine_command() -> void:
 	_command_tool.start_examine(entity.grid_position)
 
 
+func trigger_open_command() -> void:
+	_start_tile_command(_command_tool.start_open)
+
+
+func trigger_close_command() -> void:
+	_start_tile_command(_command_tool.start_close)
+
+
+func _start_tile_command(start_callable: Callable) -> void:
+	if _command_tool.is_active():
+		return
+	var entity := _get_hero_entity()
+	if entity == null:
+		return
+	start_callable.call(entity.grid_position)
+
+
 func trigger_examine_at(pos: Vector2i) -> void:
 	if _command_tool.is_active():
 		return
@@ -314,6 +335,8 @@ func _can_move_in_direction(direction: Vector2i, check_fog: bool = true) -> bool
 	if entity == null:
 		return false
 	var target := entity.grid_position + direction
+	if _world.get_monster_at(target) != null:
+		return true
 	if not _world.game_map.can_step_onto(target):
 		return false
 	if check_fog and entity is Player:
@@ -350,6 +373,27 @@ func _is_cursor_on_blocked_tile(cursor_map: Vector2) -> bool:
 	if not _world.game_map.can_step_onto(grid):
 		return true
 	return false
+
+
+func _try_attack_monster_at(grid_pos: Vector2i) -> bool:
+	var entity_id: int = _get_local_entity_id.call()
+	if entity_id < 0:
+		return false
+
+	var hero := _get_hero_entity()
+	if hero == null:
+		return false
+
+	var monster := _world.get_monster_at(grid_pos)
+	if monster == null:
+		return false
+	if not GridPosition.is_adjacent(hero.grid_position, grid_pos):
+		return false
+	if not _world.can_accept_command(entity_id):
+		return false
+
+	_world.process_command(AttackCommand.new(entity_id, monster.entity_id))
+	return true
 
 
 func _try_toggle_door_at(pos: Vector2i) -> bool:
@@ -394,6 +438,20 @@ func _confirm_command() -> void:
 				_abort_command()
 				return
 			_post_examine_result(entity_id, _command_tool.get_target_grid())
+			_command_tool.complete()
+		CommandTool.Kind.OPEN:
+			var entity_id: int = _get_local_entity_id.call()
+			if entity_id < 0:
+				_abort_command()
+				return
+			_world.try_open_door(_command_tool.get_target_grid(), entity_id)
+			_command_tool.complete()
+		CommandTool.Kind.CLOSE:
+			var entity_id: int = _get_local_entity_id.call()
+			if entity_id < 0:
+				_abort_command()
+				return
+			_world.try_close_door(_command_tool.get_target_grid(), entity_id)
 			_command_tool.complete()
 		_:
 			_abort_command()

@@ -11,3 +11,11 @@ func _init(p_entity_id: int, p_position: Vector2i) -> void:
 	entity_id = p_entity_id
 	grid_position = p_position
 	stats = CharacterStats.create_default()
+
+
+func get_sprite_frame() -> int:
+	return GameConstants.HERO_SPRITE_FRAME
+
+
+func get_display_name() -> String:
+	return "Entity"

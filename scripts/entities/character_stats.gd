@@ -92,6 +92,11 @@ func get_step_time_cost(base_cost: int) -> int:
 	return _speed_scaled_time_cost(after_speed, movement_speed)
 
 
+## Attack cost uses character speed only.
+func get_attack_time_cost(base_cost: int) -> int:
+	return get_time_cost(base_cost)
+
+
 func _speed_scaled_time_cost(base_cost: int, speed_percent: int) -> int:
 	if speed_percent <= 0:
 		return maxi(GameConstants.ACTION_TIME_COST_MIN, base_cost)

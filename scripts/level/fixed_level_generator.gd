@@ -3,6 +3,8 @@ extends LevelGenerator
 
 const MAP_WIDTH := 80
 const MAP_HEIGHT := 80
+## Center of rooms[1], away from the player start room (rooms[0]).
+const KOBOLD_SPAWN := Vector2i(29, 8)
 
 const _CARDINAL_OFFSETS: Array[Vector2i] = [
 	Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0),
@@ -98,6 +100,16 @@ func generate() -> GameMap:
 		game_map.set_lit_rect(room)
 
 	return game_map
+
+
+func get_monster_spawns() -> Array[Dictionary]:
+	return [
+		{
+			"monster_type": &"kobold",
+			"position": KOBOLD_SPAWN,
+			"asleep": true,
+		},
+	]
 
 
 func _connect_rooms_horizontally(game_map: GameMap, left: Rect2i, right: Rect2i, corridor_y: int) -> void:

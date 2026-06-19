@@ -9,3 +9,11 @@ func _init(p_entity_id: int, p_player_id: int, p_position: Vector2i) -> void:
 	super(p_entity_id, p_position)
 	player_id = p_player_id
 	entity_type = &"player"
+
+
+func get_sprite_frame() -> int:
+	return GameConstants.HERO_SPRITE_FRAME
+
+
+func get_display_name() -> String:
+	return "Hero"

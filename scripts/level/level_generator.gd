@@ -8,3 +8,7 @@ extends RefCounted
 func generate() -> GameMap:
 	push_error("LevelGenerator.generate() must be overridden.")
 	return null
+
+
+func get_monster_spawns() -> Array[Dictionary]:
+	return []

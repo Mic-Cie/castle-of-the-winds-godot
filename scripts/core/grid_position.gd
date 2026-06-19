@@ -11,3 +11,11 @@ static func is_in_bounds(pos: Vector2i, width: int, height: int) -> bool:
 static func is_adjacent(a: Vector2i, b: Vector2i) -> bool:
 	var delta := a - b
 	return absi(delta.x) <= 1 and absi(delta.y) <= 1 and delta != Vector2i.ZERO
+
+
+static func manhattan_distance(a: Vector2i, b: Vector2i) -> int:
+	return absi(a.x - b.x) + absi(a.y - b.y)
+
+
+static func chebyshev_distance(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))

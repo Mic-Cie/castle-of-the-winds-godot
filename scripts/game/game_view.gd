@@ -125,7 +125,9 @@ func _setup_world() -> void:
 	var spawn := _find_spawn_position(game_map)
 	var player := world.add_player(_local_player_id, spawn)
 	_local_player_entity_id = player.entity_id
+	_spawn_monsters(generator)
 	_refresh_fog(player.vision, game_map)
+	_refresh_all_entity_visibility()
 
 	scroll_controller.set_scroll_offset(
 		_center_scroll_on(player.grid_position, game_map.width, game_map.height)
@@ -256,17 +258,27 @@ func _center_scroll_on(position: Vector2i, map_width: int, map_height: int) -> V
 	return offset
 
 
+func _spawn_monsters(generator: LevelGenerator) -> void:
+	for spawn in generator.get_monster_spawns():
+		var pos: Vector2i = spawn["position"]
+		var asleep: bool = spawn.get("asleep", false)
+		match spawn.get("monster_type", &""):
+			&"kobold":
+				world.add_monster(world.create_kobold(pos, asleep))
+
+
 func _on_entity_added(entity: Entity) -> void:
 	var sprite := Sprite2D.new()
 	sprite.texture = load(GameConstants.MONSTERS_TEXTURE_PATH)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.hframes = 14
-	sprite.vframes = 5
-	sprite.frame = 0
+	sprite.hframes = GameConstants.MONSTER_SPRITE_COLUMNS
+	sprite.vframes = GameConstants.MONSTER_SPRITE_ROWS
+	sprite.frame = entity.get_sprite_frame()
 	sprite.centered = false
 	sprite.position = Vector2(entity.grid_position) * GameConstants.TILE_SIZE
 	_entities_root.add_child(sprite)
 	_entity_sprites[entity.entity_id] = sprite
+	_update_entity_sprite_visibility(entity.entity_id)
 
 
 func _on_entity_moved(entity_id: int, _old_position: Vector2i, new_position: Vector2i) -> void:
@@ -276,6 +288,8 @@ func _on_entity_moved(entity_id: int, _old_position: Vector2i, new_position: Vec
 
 	if entity_id == _local_player_entity_id:
 		scroll_controller.on_entity_moved(new_position)
+
+	_refresh_all_entity_visibility()
 
 
 func _on_door_changed(pos: Vector2i) -> void:
@@ -288,6 +302,34 @@ func _on_visibility_changed(player_id: int, uncovered_positions: Array[Vector2i]
 
 	for pos in uncovered_positions:
 		_fog_map.erase_cell(pos)
+
+	_refresh_all_entity_visibility()
+
+
+func _refresh_all_entity_visibility() -> void:
+	for entity_id in _entity_sprites:
+		_update_entity_sprite_visibility(entity_id)
+
+
+func _update_entity_sprite_visibility(entity_id: int) -> void:
+	var sprite: Sprite2D = _entity_sprites.get(entity_id)
+	if sprite == null:
+		return
+
+	if entity_id == _local_player_entity_id:
+		sprite.visible = true
+		return
+
+	var entity := world.get_entity(entity_id)
+	var player := world.get_entity(_local_player_entity_id) as Player
+	if entity == null or player == null:
+		sprite.visible = false
+		return
+
+	var pos := entity.grid_position
+	var on_map := player.vision.is_uncovered(pos)
+	var has_los := LineOfSight.has_line_of_sight(world.game_map, player.grid_position, pos)
+	sprite.visible = on_map and has_los
 
 
 func _on_resized() -> void:
