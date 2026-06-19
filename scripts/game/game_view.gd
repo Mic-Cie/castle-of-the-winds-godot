@@ -3,6 +3,8 @@ extends Control
 
 const _DiagonalWallResolver = preload("res://scripts/level/diagonal_wall_resolver.gd")
 const ExaminePopup = preload("res://scripts/ui/examine_popup.gd")
+const _Monster = preload("res://scripts/entities/monster.gd")
+const _MonsterVisibility = preload("res://scripts/vision/monster_visibility.gd")
 
 @onready var _viewport_container: SubViewportContainer = %ViewportContainer
 @onready var _sub_viewport: SubViewport = %SubViewport
@@ -126,7 +128,7 @@ func _setup_world() -> void:
 	var player := world.add_player(_local_player_id, spawn)
 	_local_player_entity_id = player.entity_id
 	_spawn_monsters(generator)
-	_refresh_fog(player.vision, game_map)
+	_apply_fog()
 	_refresh_all_entity_visibility()
 
 	scroll_controller.set_scroll_offset(
@@ -232,13 +234,38 @@ func _atlas_coords_for_tile(tile_type: int) -> Vector2i:
 			return GameConstants.WALL_TILE
 
 
-func _refresh_fog(vision: PlayerVision, game_map: GameMap) -> void:
-	_fog_map.clear()
+func _apply_fog() -> void:
+	var player := world.get_entity(_local_player_entity_id) as Player
+	if player == null:
+		return
+
+	var game_map := world.game_map
+	var temp_reveals := _compute_monster_temp_reveals(player)
+	var temp_lookup: Dictionary = {}
+	for pos in temp_reveals:
+		temp_lookup[pos] = true
+
 	for y in range(game_map.height):
 		for x in range(game_map.width):
 			var pos := Vector2i(x, y)
-			if not vision.is_uncovered(pos):
+			if player.vision.is_uncovered(pos) or temp_lookup.has(pos):
+				_fog_map.erase_cell(pos)
+			else:
 				_fog_map.set_cell(pos, 0, Vector2i.ZERO)
+
+
+func _compute_monster_temp_reveals(player: Player) -> Array[Vector2i]:
+	var reveals: Array[Vector2i] = []
+	for entity_id in world.entities:
+		var entity: Entity = world.entities[entity_id]
+		if not entity is _Monster:
+			continue
+		var pos := entity.grid_position
+		if player.vision.is_uncovered(pos):
+			continue
+		if _MonsterVisibility.can_see_monster(world.game_map, player.grid_position, pos):
+			reveals.append(pos)
+	return reveals
 
 
 func _find_spawn_position(game_map: GameMap) -> Vector2i:
@@ -294,19 +321,18 @@ func _on_entity_moved(entity_id: int, _old_position: Vector2i, new_position: Vec
 
 func _on_door_changed(pos: Vector2i) -> void:
 	_refresh_door_cell(pos, world.game_map.get_door_state(pos))
+	_refresh_all_entity_visibility()
 
 
-func _on_visibility_changed(player_id: int, uncovered_positions: Array[Vector2i]) -> void:
+func _on_visibility_changed(player_id: int, _uncovered_positions: Array[Vector2i]) -> void:
 	if player_id != _local_player_id:
 		return
-
-	for pos in uncovered_positions:
-		_fog_map.erase_cell(pos)
 
 	_refresh_all_entity_visibility()
 
 
 func _refresh_all_entity_visibility() -> void:
+	_apply_fog()
 	for entity_id in _entity_sprites:
 		_update_entity_sprite_visibility(entity_id)
 
@@ -326,10 +352,15 @@ func _update_entity_sprite_visibility(entity_id: int) -> void:
 		sprite.visible = false
 		return
 
-	var pos := entity.grid_position
-	var on_map := player.vision.is_uncovered(pos)
-	var has_los := LineOfSight.has_line_of_sight(world.game_map, player.grid_position, pos)
-	sprite.visible = on_map and has_los
+	if entity is _Monster:
+		sprite.visible = _MonsterVisibility.can_see_monster(
+			world.game_map,
+			player.grid_position,
+			entity.grid_position,
+		)
+		return
+
+	sprite.visible = false
 
 
 func _on_resized() -> void:

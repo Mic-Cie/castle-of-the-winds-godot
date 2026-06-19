@@ -9,6 +9,12 @@ const MOVE_DIRECTIONS: Array[Vector2i] = [
 	Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1),
 ]
 
+## Cardinals before diagonals so chase tie-breaks prefer straight moves toward the hero.
+const CHASE_DIRECTIONS: Array[Vector2i] = [
+	Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1),
+	Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1),
+]
+
 
 static func update_awareness(world, monster: _Monster) -> void:
 	var hero: Player = world.get_primary_player()
@@ -46,9 +52,14 @@ static func choose_move_direction(world, monster: _Monster) -> Vector2i:
 	if monster.chasing:
 		target_pos = monster.last_known_hero_position
 		if target_pos != monster.grid_position:
-			var toward := _best_direction_toward(monster.grid_position, valid_directions, target_pos)
+			var toward := _best_chase_direction(
+				monster.grid_position,
+				valid_directions,
+				target_pos,
+			)
 			if toward != Vector2i.ZERO:
 				return toward
+		return Vector2i.ZERO
 
 	if _is_corridor(valid_directions):
 		if (
@@ -84,17 +95,52 @@ static func _is_corridor(valid_directions: Array[Vector2i]) -> bool:
 	return valid_directions[0] + valid_directions[1] == Vector2i.ZERO
 
 
-static func _best_direction_toward(
+static func _best_chase_direction(
 	from: Vector2i,
 	valid_directions: Array[Vector2i],
 	target: Vector2i,
 ) -> Vector2i:
 	var best_direction := Vector2i.ZERO
-	var best_distance := INF
-	for direction in valid_directions:
+	var best_score := Vector3i(999999, 999999, 999999)
+
+	for direction in CHASE_DIRECTIONS:
+		if direction not in valid_directions:
+			continue
 		var next_pos := from + direction
-		var distance := float(GridPosition.chebyshev_distance(next_pos, target))
-		if distance < best_distance:
-			best_distance = distance
+		var score := _chase_direction_score(from, next_pos, direction, target)
+		if _is_better_chase_score(score, best_score):
+			best_score = score
 			best_direction = direction
+
 	return best_direction
+
+
+static func _chase_direction_score(
+	from: Vector2i,
+	next_pos: Vector2i,
+	direction: Vector2i,
+	target: Vector2i,
+) -> Vector3i:
+	return Vector3i(
+		GridPosition.chebyshev_distance(next_pos, target),
+		GridPosition.manhattan_distance(next_pos, target),
+		-_axis_alignment(from, direction, target),
+	)
+
+
+static func _is_better_chase_score(candidate: Vector3i, current: Vector3i) -> bool:
+	if candidate.x != current.x:
+		return candidate.x < current.x
+	if candidate.y != current.y:
+		return candidate.y < current.y
+	return candidate.z < current.z
+
+
+static func _axis_alignment(from: Vector2i, direction: Vector2i, target: Vector2i) -> int:
+	var delta := target - from
+	var score := 0
+	if delta.x != 0 and signi(direction.x) == signi(delta.x):
+		score += 1
+	if delta.y != 0 and signi(direction.y) == signi(delta.y):
+		score += 1
+	return score
