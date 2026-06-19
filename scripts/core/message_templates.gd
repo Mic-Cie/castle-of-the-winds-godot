@@ -25,6 +25,13 @@ const DONE := "Done"
 const NOTHING_TO_OPEN := "Nothing there to open!"
 const NOTHING_TO_CLOSE := "Nothing there to close!"
 
+const MONSTER_HEALTH_UNINJURED := "Uninjured"
+const MONSTER_HEALTH_BARELY_SCRATCHED := "Barely scratched"
+const MONSTER_HEALTH_SLIGHTLY_INJURED := "Slightly injured"
+const MONSTER_HEALTH_INJURED := "Injured"
+const MONSTER_HEALTH_HEAVILY_INJURED := "Heavily injured"
+const MONSTER_HEALTH_CRITICALLY_INJURED := "Critically injured"
+
 
 static func format_monster_hits_you(monster_name: String) -> String:
 	return "The %s hits you!" % monster_name

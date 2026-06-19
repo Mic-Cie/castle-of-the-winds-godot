@@ -95,7 +95,13 @@ func examine_tile(entity_id: int, pos: Vector2i) -> String:
 	if entity == null or not entity is Player:
 		return MessageTemplates.EXAMINE_UNSEEN_LOCATION
 	var player := entity as Player
-	return Examine.examine(game_map, player.vision, player.grid_position, pos)
+	return Examine.examine(
+		game_map,
+		player.vision,
+		player.grid_position,
+		pos,
+		get_monster_at(pos),
+	)
 
 
 func can_accept_command(entity_id: int) -> bool:

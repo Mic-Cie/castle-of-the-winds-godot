@@ -21,3 +21,26 @@ func get_sprite_frame() -> int:
 
 func get_display_name() -> String:
 	return "Monster"
+
+
+func get_health_condition() -> String:
+	var hp := stats.hp
+	if hp.max_value <= 0:
+		return MessageTemplates.MONSTER_HEALTH_CRITICALLY_INJURED
+	if hp.current >= hp.max_value:
+		return MessageTemplates.MONSTER_HEALTH_UNINJURED
+
+	var ratio := float(hp.current) / float(hp.max_value)
+	if ratio >= 0.90:
+		return MessageTemplates.MONSTER_HEALTH_BARELY_SCRATCHED
+	if ratio >= 0.70:
+		return MessageTemplates.MONSTER_HEALTH_SLIGHTLY_INJURED
+	if ratio >= 0.40:
+		return MessageTemplates.MONSTER_HEALTH_INJURED
+	if ratio >= 0.20:
+		return MessageTemplates.MONSTER_HEALTH_HEAVILY_INJURED
+	return MessageTemplates.MONSTER_HEALTH_CRITICALLY_INJURED
+
+
+func get_examine_description() -> String:
+	return "%s %s" % [get_health_condition(), get_display_name()]

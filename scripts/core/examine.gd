@@ -1,16 +1,26 @@
 class_name Examine
 extends RefCounted
 
+const _Monster = preload("res://scripts/entities/monster.gd")
+const _MonsterVisibility = preload("res://scripts/vision/monster_visibility.gd")
+
+
 static func examine(
 	game_map: GameMap,
 	vision: PlayerVision,
 	observer_pos: Vector2i,
 	target_pos: Vector2i,
+	monster_at_tile = null,
 ) -> String:
 	if not GridPosition.is_in_bounds(target_pos, game_map.width, game_map.height):
 		return MessageTemplates.EXAMINE_UNSEEN_LOCATION
 
-	var objects := _describe_tile(game_map, target_pos)
+	var tile_objects := _describe_tile(game_map, target_pos)
+	var monster_description := _describe_visible_monster(
+		game_map,
+		observer_pos,
+		monster_at_tile,
+	)
 	var has_los := LineOfSight.has_line_of_sight(game_map, observer_pos, target_pos)
 	var is_on_map := vision.is_uncovered(target_pos)
 	var can_detect := _can_detect_tile(game_map, vision, observer_pos, target_pos)
@@ -19,17 +29,35 @@ static func examine(
 	var detect_objects: Array[String] = []
 	var map_objects: Array[String] = []
 
+	if monster_description != "":
+		see_objects.append(monster_description)
+
 	if has_los and is_on_map:
-		see_objects = objects
+		see_objects.append_array(tile_objects)
 	elif is_on_map:
-		map_objects = objects
+		map_objects.append_array(tile_objects)
 	elif can_detect:
-		detect_objects = objects
+		detect_objects.append_array(tile_objects)
 
 	if see_objects.is_empty() and detect_objects.is_empty() and map_objects.is_empty():
 		return MessageTemplates.EXAMINE_UNSEEN_LOCATION
 
 	return _format_output(see_objects, detect_objects, map_objects)
+
+
+static func _describe_visible_monster(
+	game_map: GameMap,
+	observer_pos: Vector2i,
+	monster_at_tile,
+) -> String:
+	if monster_at_tile == null or not monster_at_tile is _Monster:
+		return ""
+
+	var monster: _Monster = monster_at_tile
+	if not _MonsterVisibility.can_see_monster(game_map, observer_pos, monster.grid_position):
+		return ""
+
+	return monster.get_examine_description()
 
 
 static func _can_detect_tile(
