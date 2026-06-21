@@ -18,14 +18,20 @@ var game_map: GameMap
 var entities: Dictionary = {}
 var game_time: int = 0
 var game_mode: int = GameMode.Mode.SINGLE_PLAYER
+var difficulty: int = GameConstants.DEFAULT_DIFFICULTY
 
 var _next_entity_id: int = 1
 var _entity_activities: Dictionary = {}
 
 
-func _init(p_game_map: GameMap, p_game_mode: int = GameConstants.DEFAULT_GAME_MODE) -> void:
+func _init(
+	p_game_map: GameMap,
+	p_game_mode: int = GameConstants.DEFAULT_GAME_MODE,
+	p_difficulty: int = GameConstants.DEFAULT_DIFFICULTY,
+) -> void:
 	game_map = p_game_map
 	game_mode = p_game_mode
+	difficulty = p_difficulty
 
 
 func add_player(player_id: int, spawn_position: Vector2i) -> Player:
@@ -177,18 +183,36 @@ func try_attack(attacker_id: int, defender_id: int) -> bool:
 		return false
 
 	if attacker is Player and defender is _Monster:
-		post_player_message(
-			attacker.entity_id,
-			MessageTemplates.format_you_hit_monster(defender.get_display_name()),
-		)
-		return true
+		return _resolve_melee_attack(attacker, defender)
 	if attacker is _Monster and defender is Player:
-		post_player_message(
-			defender.entity_id,
-			MessageTemplates.format_monster_hits_you(attacker.get_display_name()),
-		)
-		return true
+		return _resolve_melee_attack(attacker, defender)
 	return false
+
+
+func _resolve_melee_attack(attacker: Entity, defender: Entity) -> bool:
+	var message_entity_id := defender.entity_id if attacker is _Monster else attacker.entity_id
+	if not CharacterStats.rolls_hit(attacker.stats.dexterity.current, defender.stats.dexterity.current):
+		var miss_message := (
+			MessageTemplates.format_monster_misses_you(attacker.get_display_name())
+			if attacker is _Monster
+			else MessageTemplates.format_you_miss_monster(defender.get_display_name())
+		)
+		post_player_message(message_entity_id, miss_message)
+		return true
+
+	var damage := CharacterStats.calculate_damage(
+		attacker.stats.get_attack_value(),
+		defender.stats.armor,
+	)
+	defender.take_damage(damage)
+
+	var hit_message := (
+		MessageTemplates.format_monster_hits_you(attacker.get_display_name())
+		if attacker is _Monster
+		else MessageTemplates.format_you_hit_monster(defender.get_display_name())
+	)
+	post_player_message(message_entity_id, hit_message)
+	return true
 
 
 func process_search_command(command: SearchCommand) -> bool:
@@ -385,7 +409,19 @@ func _register_entity(entity: Entity) -> void:
 	entity.stats.recalculate_max_mana()
 	entity.stats.recalculate_carry_weight()
 	entity.stats.recalculate_movement_speed()
+	entity.stats.recalculate_experience_to_level_up(difficulty)
+	_apply_fixed_max_hp_if_needed(entity)
 	_track_entity_stats(entity)
+
+
+func _apply_fixed_max_hp_if_needed(entity: Entity) -> void:
+	if not entity is _Monster:
+		return
+	var fixed_hp := (entity as _Monster).get_fixed_max_hp()
+	if fixed_hp <= 0:
+		return
+	entity.stats.hp.set_max_unclamped(fixed_hp)
+	entity.stats.hp.set_current_unclamped(fixed_hp)
 
 
 func _track_entity_stats(entity: Entity) -> void:

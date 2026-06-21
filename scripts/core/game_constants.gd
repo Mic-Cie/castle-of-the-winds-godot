@@ -11,6 +11,7 @@ const MONSTER_SPRITE_COLUMNS := 14
 const MONSTER_SPRITE_ROWS := 5
 const HERO_SPRITE_FRAME := 0
 const KOBOLD_SPRITE_FRAME := 2
+const KOBOLD_MAX_HP := 10
 
 const MONSTER_ASLEEP_NOTICE_BASE := 0.5
 const MONSTER_ASLEEP_NOTICE_DISTANCE_PENALTY := 0.08
@@ -92,16 +93,21 @@ const EXAMINE_POPUP_CURSOR_TOP_LEFT_OFFSET := Vector2(0, 0)
 const EXAMINE_POPUP_CURSOR_SIZE := Vector2(16, 16)
 const DEFAULT_GAME_MODE := GameMode.Mode.SINGLE_PLAYER
 ## const DEFAULT_GAME_MODE := GameMode.Mode.MULTI_PLAYER
+const DEFAULT_DIFFICULTY := Difficulty.Level.INTERMEDIATE
+const DEFAULT_EXPERIENCE := 0
+## Cap for XP required to reach the next level (keeps formula results within safe int range).
+const MAX_EXPERIENCE_TO_LEVEL_UP := 999_999_999_999
 
 const DEFAULT_HP := 10
 const DEFAULT_HP_MAX := 10
 const DEFAULT_LEVEL := 1
 const DEFAULT_DRAINED_HIT_POINTS := 0
 
-## Tunable max-HP formula: (HP_BASE + (con - ref) * per_point) * level - drained.
-const HP_BASE := 10
-const HP_CONSTITUTION_REFERENCE := 10
-const HP_PER_CONSTITUTION_POINT := 2
+## Max-HP formula (integer division): (C*(4*L-1) + 7*L + HP_MAX_BASE) / (2*L + HP_MAX_DEN_BASE) - drained.
+## Tuned to approximate reference values across level and constitution.
+const HP_MAX_BASE := 10
+const HP_MAX_LEVEL_TERM := 7
+const HP_MAX_DEN_BASE := 13
 
 ## Max-mana formula: ceil((level - 1) * (int - ref) / level_div) + ceil((int - ref) / int_div).
 const MANA_INTELLIGENCE_REFERENCE := 15
@@ -128,7 +134,21 @@ const DEFAULT_DEXTERITY := 10
 const DEFAULT_DEXTERITY_MAX := 10
 const DEFAULT_INTELLIGENCE := 10
 const DEFAULT_INTELLIGENCE_MAX := 10
+
+const HERO_DEFAULT_STRENGTH := 45
+const HERO_DEFAULT_DEXTERITY := 45
+const HERO_DEFAULT_CONSTITUTION := 45
+const HERO_DEFAULT_INTELLIGENCE := 45
+
 const DEFAULT_SPEED := 100
+const DEFAULT_ARMOR := 0
+
+## Melee attack power scales linearly with strength (before armor and variance).
+## Tuned: strength 10 -> ~3 avg damage vs unarmored; strength 70 -> ~10 avg.
+const ATTACK_STRENGTH_REFERENCE := 10
+const ATTACK_HIGH_STRENGTH_REFERENCE := 70
+const ATTACK_DAMAGE_AT_REFERENCE := 3
+const ATTACK_DAMAGE_AT_HIGH_STRENGTH := 10
 
 
 static func format_game_time(seconds: int) -> String:

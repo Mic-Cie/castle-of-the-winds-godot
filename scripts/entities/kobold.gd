@@ -14,3 +14,7 @@ func get_sprite_frame() -> int:
 
 func get_display_name() -> String:
 	return "Kobold"
+
+
+func get_fixed_max_hp() -> int:
+	return GameConstants.KOBOLD_MAX_HP

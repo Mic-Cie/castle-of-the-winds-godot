@@ -19,3 +19,9 @@ func get_sprite_frame() -> int:
 
 func get_display_name() -> String:
 	return "Entity"
+
+
+func take_damage(amount: int) -> void:
+	if amount <= 0:
+		return
+	stats.hp.set_current_clamped(stats.hp.current - amount)

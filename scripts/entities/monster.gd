@@ -15,6 +15,10 @@ func _init(p_entity_id: int, p_position: Vector2i) -> void:
 	entity_type = &"monster"
 
 
+func get_fixed_max_hp() -> int:
+	return -1
+
+
 func get_sprite_frame() -> int:
 	return 0
 

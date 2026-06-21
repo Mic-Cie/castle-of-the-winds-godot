@@ -41,5 +41,13 @@ static func format_you_hit_monster(monster_name: String) -> String:
 	return "You hit the %s!" % monster_name
 
 
+static func format_you_miss_monster(monster_name: String) -> String:
+	return "You miss the %s!" % monster_name
+
+
+static func format_monster_misses_you(monster_name: String) -> String:
+	return "The %s misses you!" % monster_name
+
+
 static func format_command_pending(command_name: String) -> String:
 	return "Command Pending: %s..." % command_name
